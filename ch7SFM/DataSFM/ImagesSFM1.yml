@@ -1,0 +1,28 @@
+%YAML:1.0
+---
+images:
+   - "img1a.png"
+   - "img2a.png"
+   - "img3a.png"
+   - "img4a.png"
+   - "img5a.png"
+   - "img6a.png"
+   - "img7a.png"
+   - "img8a.png"
+   - "img9a.png"
+   - "img10a.png"
+   - "img11a.png"
+   - "img12a.png"
+   - "img13a.png"
+cameraMatrice: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 1.4262170355688456e+03, 0., 6.3695509566443866e+02, 0.,
+       1.4259242356037487e+03, 4.7562231261126016e+02, 0., 0., 1. ]
+cameraDistorsion: !!opencv-matrix
+   rows: 1
+   cols: 8
+   dt: d
+   data: [ 7.2921273383726197e-03, 1.0577796627229210e+00, 0., 0.,
+       -3.7473179008064217e+00, 0., 0., 0. ]
