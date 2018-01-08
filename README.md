@@ -2,7 +2,7 @@
 ### en C++ (Windows, Linux, Raspberry)
 
 Ce dépôt contient les codes sources des exemples du livre [Traitement d'images et de vidéos avec OpenCV 3
- en C++ (Windows, Linux, Raspberry)](https://www.d-booker.fr/opencv/510-traitement-d-images-et-de-videos-avec-opencv-3.html), écrit par Laurent Berger et à paraître aux éditions [D-BookeR](http://www.d-booker.fr) le 08/12/2017. 
+ en C++ (Windows, Linux, Raspberry)](https://www.d-booker.fr/opencv/510-traitement-d-images-et-de-videos-avec-opencv-3.html), écrit par Laurent Berger et paru aux éditions [D-BookeR](http://www.d-booker.fr) le 08/12/2017. 
 
 ![Couverture du livre](opencv-cpp-couv_github.jpg)
 
