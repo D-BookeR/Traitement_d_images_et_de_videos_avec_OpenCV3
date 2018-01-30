@@ -8,7 +8,7 @@ find_package(OpenCV  REQUIRED)
 file(GLOB ch6PanoCam_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ch6PanoCam ${ch6PanoCam_SRCS})
+ADD_EXECUTABLE(ch6PanoCam ${ch6PanoCam_SRCS})
 
 
 

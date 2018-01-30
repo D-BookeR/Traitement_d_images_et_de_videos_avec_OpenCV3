@@ -8,7 +8,7 @@ find_package(OpenCV  REQUIRED)
 file(GLOB faciale_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (faciale ${faciale_SRCS})
+ADD_EXECUTABLE(faciale ${faciale_SRCS})
 
 
 if (OpenCV_FOUND)

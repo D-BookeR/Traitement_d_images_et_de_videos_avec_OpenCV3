@@ -8,7 +8,7 @@ find_package(OpenCV  REQUIRED)
 file(GLOB ch4Watershed_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ch4Watershed ${ch4Watershed_SRCS})
+ADD_EXECUTABLE(ch4Watershed ${ch4Watershed_SRCS})
 
 
 

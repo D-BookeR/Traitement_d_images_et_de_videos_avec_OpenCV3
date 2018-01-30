@@ -8,7 +8,7 @@ file(GLOB ch2ex2_SRCS
     "*.h"
     "*.cpp")
 
-ADD_EXECUTABLE (ch2ex2 ${ch2ex2_SRCS})
+ADD_EXECUTABLE(ch2ex2 ${ch2ex2_SRCS})
 
 if (OpenCV_FOUND)
 	include_directories( ${OpenCV_INCLUDE_DIRS} )

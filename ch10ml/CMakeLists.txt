@@ -8,7 +8,7 @@ find_package(OpenCV  REQUIRED)
 file(GLOB ml_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ml ${ml_SRCS})
+ADD_EXECUTABLE(ml ${ml_SRCS})
 
 
 if (OpenCV_FOUND)

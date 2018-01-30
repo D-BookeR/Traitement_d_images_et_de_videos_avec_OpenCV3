@@ -11,7 +11,7 @@ find_package(VTK  OPTIONAL_COMPONENTS)
 file(GLOB chSfm_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (chSfm ${chSfm_SRCS})
+ADD_EXECUTABLE(chSfm ${chSfm_SRCS})
 
 
 if (OpenCV_FOUND)

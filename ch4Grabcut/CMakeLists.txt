@@ -8,7 +8,7 @@ find_package(OpenCV  REQUIRED)
 file(GLOB ch4GrabCut_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ch4GrabCut ${ch4GrabCut_SRCS})
+ADD_EXECUTABLE(ch4GrabCut ${ch4GrabCut_SRCS})
 
 
 

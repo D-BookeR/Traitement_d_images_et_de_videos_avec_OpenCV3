@@ -8,7 +8,7 @@ cmake_policy(SET CMP0028 NEW)
 file(GLOB ch4Seuillage_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ch4Seuillage ${ch4seuillage_SRCS})
+ADD_EXECUTABLE(ch4Seuillage ${ch4seuillage_SRCS})
 
 
 

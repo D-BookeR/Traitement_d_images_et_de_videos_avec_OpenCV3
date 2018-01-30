@@ -8,7 +8,7 @@ find_package(OpenCV  REQUIRED)
 file(GLOB ch3ex2_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ch3ex2 ${ch3ex2_SRCS})
+ADD_EXECUTABLE(ch3ex2 ${ch3ex2_SRCS})
 
 
 

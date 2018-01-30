@@ -8,7 +8,7 @@ find_package(OpenCV  REQUIRED)
 file(GLOB ocr_exemple1_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ocr_exemple1 ${ocr_exemple1_SRCS})
+ADD_EXECUTABLE(ocr_exemple1 ${ocr_exemple1_SRCS})
 
 
 if (OpenCV_FOUND)

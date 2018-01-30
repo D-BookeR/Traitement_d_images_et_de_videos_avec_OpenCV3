@@ -8,7 +8,7 @@ find_package(OpenCV  REQUIRED)
 file(GLOB ch4KMeans_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ch4KMeans ${ch4KMeans_SRCS})
+ADD_EXECUTABLE(ch4KMeans ${ch4KMeans_SRCS})
 
 
 

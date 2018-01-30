@@ -9,7 +9,7 @@ find_package(VTK  OPTIONAL_COMPONENTS)
 file(GLOB ch7Stereo_SRCS
     "*.h"
     "*.cpp")
-ADD_EXECUTABLE (ch7Stereo ${ch7Stereo_SRCS})
+ADD_EXECUTABLE(ch7Stereo ${ch7Stereo_SRCS})
 
 if (OpenCV_FOUND)
 	include_directories( ${OpenCV_INCLUDE_DIRS} )
