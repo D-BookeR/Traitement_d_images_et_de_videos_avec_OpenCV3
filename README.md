@@ -1,4 +1,4 @@
-## Traitement d'images et de vidéos avec OpenCV 3
+## Traitement d'images et de vidéos avec OpenCV branch 3.4
 ### en C++ (Windows, Linux, Raspberry)
 
 Ce dépôt contient les codes sources des exemples du livre [Traitement d'images et de vidéos avec OpenCV 3
