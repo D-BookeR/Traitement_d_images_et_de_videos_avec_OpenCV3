@@ -307,7 +307,7 @@ static void onMouse(int event, int x, int y, int flags, void *f)
 {
     vector<Rect> *rCam = static_cast<vector<Rect> *>(f);
 
-    if (event == CV_EVENT_LBUTTONDOWN)
+    if (event == EVENT_LBUTTONDOWN)
     {
         Point p(x, y);
         indCamActive = -1;

@@ -110,7 +110,7 @@ int main (int argc,char **argv)
     }
 
     char c=0;
-    int nbCapture=0;
+    size_t nbCapture=0;
     int64 tpsIni=getTickCount();
     for (;!quitter;)
     {
@@ -323,7 +323,7 @@ void onMouse(int event, int x, int y, int flags, void *f)
 {
     vector<Rect> *rCam = static_cast<vector<Rect> *>(f);
 
-    if (event == CV_EVENT_LBUTTONDOWN)
+    if (event == EVENT_LBUTTONDOWN)
     {
         Point p(x, y);
         indCamActive = -1;
@@ -331,7 +331,7 @@ void onMouse(int event, int x, int y, int flags, void *f)
         {
             if (p.inside((*rCam)[i]))
             {
-                indCamActive = i;
+                indCamActive = static_cast<int>(i);
             }
         }
 
