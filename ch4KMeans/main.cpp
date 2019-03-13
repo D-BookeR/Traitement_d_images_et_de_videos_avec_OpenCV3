@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
         cout << "Fichier vide ou inexistant. Vérifiez le nom du fichier.\n";
         return 0;
     }
-    cvtColor(t.img,t.imgGris,CV_BGR2GRAY);
+    cvtColor(t.img,t.imgGris,COLOR_BGR2GRAY);
     imshow(nomOriginal, t.imgGris);
     Mat srcFGris,srcFcouleur;
     t.img.convertTo(srcFcouleur, CV_32FC3);

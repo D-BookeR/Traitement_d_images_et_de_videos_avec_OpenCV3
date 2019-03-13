@@ -179,7 +179,7 @@ void ChoixSeuil(int x, void *r)
     imshow(format("Canny %s", pgc->nomFiltre.c_str()), front);
     vector<vector<Point> > contours;
     Mat cmpConnex(front.size(),CV_8UC3,Scalar(0));
-    findContours(front,contours, RETR_LIST, CV_CHAIN_APPROX_NONE);
+    findContours(front,contours, RETR_LIST, CHAIN_APPROX_NONE);
     for (int i = 0; i < contours.size(); i++)
     {
         drawContours(cmpConnex,contours,i,Scalar(pgc->lutRND.at<Vec3b>(i,0)), -1);

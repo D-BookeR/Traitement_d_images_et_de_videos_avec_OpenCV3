@@ -3,16 +3,14 @@ cmake_minimum_required(VERSION 2.8)
 PROJECT (chSfm)
 
 find_package(glog QUIET REQUIRED)
-find_package(ceres QUIET REQUIRED)
+find_package(Ceres QUIET REQUIRED)
 find_package(OpenCV  REQUIRED)
 find_package(VTK  OPTIONAL_COMPONENTS)
-
 
 file(GLOB chSfm_SRCS
     "*.h"
     "*.cpp")
 ADD_EXECUTABLE (chSfm ${chSfm_SRCS})
-
 
 if (OpenCV_FOUND)
 	include_directories( ${OpenCV_INCLUDE_DIRS} )

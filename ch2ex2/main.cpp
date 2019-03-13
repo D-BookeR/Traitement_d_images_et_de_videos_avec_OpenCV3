@@ -39,6 +39,25 @@ static void onMouse(int event, int x, int y, int flags, void *f);
 
 int main (int argc,char **argv)
 {
+
+        Mat bwimg;
+        Mat img = imread("g:/lib/opencv/samples/data/lena.jpg");
+        namedWindow("image", WINDOW_NORMAL);
+        cvtColor(img, bwimg, cv::COLOR_RGB2GRAY);
+
+        for (int r = 0; r < bwimg.rows; r++) {
+            for (int c = 0; c < bwimg.cols; c++) {
+                bwimg.at<uchar>(r, c) = bwimg.at<uchar>(r, c)*0.5f;
+            }
+        }
+
+        imshow("image", bwimg);
+
+
+        waitKey(0);
+        return 0;
+
+
     map<int ,VideoCapture> v;
     CommandLineParser parser(argc, argv, keys);
 

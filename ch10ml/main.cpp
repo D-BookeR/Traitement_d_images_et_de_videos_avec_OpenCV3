@@ -52,26 +52,26 @@ int main()
     vector<Ptr<StatModel>> modeleDispo;
     BaseFormes md;
 
+    Ptr<SVM> modeleSVM = InitModeleSVM(md);
+    if (modeleSVM && modeleSVM.get()->isTrained())
+        modeleDispo.push_back(modeleSVM);
     Ptr<ANN_MLP> modeleANN = InitModeleANN(md);
-    if (modeleANN->isTrained())
+    if (modeleANN && modeleANN.get()->isTrained())
         modeleDispo.push_back(modeleANN);
     Ptr<EM> modeleEM = InitModeleEM(md);
-    if (modeleEM->isTrained())
+    if (modeleEM && modeleEM.get()->isTrained())
         modeleDispo.push_back(modeleEM);
     Ptr<KNearest> modeleKNN = InitModeleKNearest(md);
-    if (modeleKNN->isTrained())
+    if (modeleKNN && modeleKNN.get()->isTrained())
         modeleDispo.push_back(modeleKNN);
     Ptr<LogisticRegression> modeleLR = InitModeleLogisticRegression(md);
-    if (modeleLR->isTrained())
+    if (modeleLR && modeleLR.get()->isTrained())
         modeleDispo.push_back(modeleLR);
     Ptr<NormalBayesClassifier> modeleNB = InitModeleNormalBayesClassifier(md);
-    if (modeleNB->isTrained())
+    if (modeleNB && modeleNB.get()->isTrained())
         modeleDispo.push_back(modeleNB);
-    Ptr<SVM> modeleSVM = InitModeleSVM(md);
-    if (modeleSVM->isTrained())
-        modeleDispo.push_back(modeleSVM);
     Ptr<RTrees> modeleRTrees = InitModeleRTrees(md);
-    if (modeleRTrees->isTrained())
+    if (modeleRTrees && modeleRTrees.get()->isTrained())
         modeleDispo.push_back(modeleRTrees);
     int code = 0;
     String nomFenetre = "Feuille";
@@ -383,8 +383,19 @@ Mat DescripteurContour(vector<Point> contour, int typeDescripteur)
 
 Ptr<ANN_MLP> InitModeleANN(BaseFormes &md)
 {
-    Ptr<ANN_MLP> machine = Algorithm::load<ANN_MLP>("opencv_ml_ann_mlp.yml");
-    if (!machine)
+    Ptr<ANN_MLP> machine;
+    try
+    {
+     machine = Algorithm::load<ANN_MLP>("opencv_ml_ann_mlp.yml");
+    if (md.minF.size() == 0)
+        {
+        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
+        fs["minF"] >> md.minF;
+        fs["maxF"] >> md.maxF;
+        }
+
+    }
+    catch (cv::Exception &e)
     {
         if (md.formes.size() == 0)
             DonneesModele(md);
@@ -416,96 +427,120 @@ Ptr<ANN_MLP> InitModeleANN(BaseFormes &md)
         fs << "minF" << md.minF;
         fs << "maxF" << md.maxF;
     }
-    else if (md.minF.size()==0)
-    {
-        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
-        fs["minF"] >> md.minF;
-        fs["maxF"] >> md.maxF;
-    }
     return machine;
 }
 
 Ptr<SVM> InitModeleSVM(BaseFormes & md)
 {
-    Ptr<SVM> machine = Algorithm::load<SVM>("opencv_ml_svm.yml");
-
-    if (!machine)
+    Ptr<SVM> machine;
+    try
     {
-        if (md.formes.size() == 0)
-            DonneesModele(md);
-        machine = SVM::create();
-        machine->setKernel(SVM::RBF);
-        machine->setType(SVM::C_SVC);
-        machine->setGamma(1); 
-        machine->setC(1); 
-        machine->trainAuto(md.baseDonnees);
-        if (machine->isTrained())
+        machine = Algorithm::load<SVM>("opencv_ml_svm.yml");
+        if (!machine)
         {
-            Mat reponse;
-            cout << "Modele " << machine->getDefaultName() << "\n";
-            cout << "Erreur sur les donnees tests : " << machine->calcError(md.baseDonnees, true, noArray()) << "\n";
-            cout << "Erreur sur les donnees d'entrainement : " << machine->calcError(md.baseDonnees, false, noArray()) << "\n";
-        }
-        else
-        {
-            cout << "ERREUR lors de l'initialisation du modèle\n ";
-            return machine;
-        }
-        machine->save(machine->getDefaultName() + ".yml");
-        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::APPEND);
-        fs << "minF" << md.minF;
-        fs << "maxF" << md.maxF;
-    }
-    else if (md.minF.size() == 0)
-    {
-        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
-        fs["minF"] >> md.minF;
-        fs["maxF"] >> md.maxF;
-    }
-    return machine;
-}
-
-Ptr<NormalBayesClassifier> InitModeleNormalBayesClassifier(BaseFormes & md)
-{
-    Ptr<NormalBayesClassifier> machine = Algorithm::load<NormalBayesClassifier>("opencv_ml_nbayes.yml");
-
-    if (!machine)
-    {
-        if (md.formes.size() == 0)
-            DonneesModele(md);
-        machine = NormalBayesClassifier::create();
-        machine->train(md.baseDonnees);
-        if (machine->isTrained())
-        {
-            Mat reponse;
-            cout << "Modele " << machine->getDefaultName() << "\n";
-            cout << "Erreur sur les donnees tests : " << machine->calcError(md.baseDonnees, true, noArray()) << "\n";
-            cout << "Erreur sur les donnees d'entrainement : " << machine->calcError(md.baseDonnees, false, noArray()) << "\n";
+            if (md.formes.size() == 0)
+                DonneesModele(md);
+            machine = SVM::create();
+            machine->setKernel(SVM::RBF);
+            machine->setType(SVM::C_SVC);
+            machine->setGamma(1);
+            machine->setC(1);
+            machine->train(md.baseDonnees);
+            if (machine->isTrained())
+            {
+                Mat reponse;
+                cout << "Modele " << machine->getDefaultName() << "\n";
+                cout << "Erreur sur les donnees tests : " << machine->calcError(md.baseDonnees, true, noArray()) << "\n";
+                cout << "Erreur sur les donnees d'entrainement : " << machine->calcError(md.baseDonnees, false, noArray()) << "\n";
+            }
+            else
+            {
+                cout << "ERREUR lors de l'initialisation du modèle\n ";
+                return machine;
+            }
             machine->save(machine->getDefaultName() + ".yml");
             FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::APPEND);
             fs << "minF" << md.minF;
             fs << "maxF" << md.maxF;
         }
-        else
+        else if (md.minF.size() == 0)
         {
-            cout << "ERREUR lors de l'initialisation du modèle\n ";
-            return machine;
+            FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
+            fs["minF"] >> md.minF;
+            fs["maxF"] >> md.maxF;
         }
+        return machine;
+
     }
-    else if (md.minF.size() == 0)
+    catch (cv::Exception &e)
     {
-        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
-        fs["minF"] >> md.minF;
-        fs["maxF"] >> md.maxF;
+        return NULL;
     }
-return machine;
+
+}
+
+Ptr<NormalBayesClassifier> InitModeleNormalBayesClassifier(BaseFormes & md)
+{
+    try
+    {
+        Ptr<NormalBayesClassifier> machine = Algorithm::load<NormalBayesClassifier>("opencv_ml_nbayes.yml");
+
+        if (!machine)
+        {
+            if (md.formes.size() == 0)
+                DonneesModele(md);
+            machine = NormalBayesClassifier::create();
+            machine->train(md.baseDonnees);
+            if (machine->isTrained())
+            {
+                Mat reponse;
+                cout << "Modele " << machine->getDefaultName() << "\n";
+                cout << "Erreur sur les donnees tests : " << machine->calcError(md.baseDonnees, true, noArray()) << "\n";
+                cout << "Erreur sur les donnees d'entrainement : " << machine->calcError(md.baseDonnees, false, noArray()) << "\n";
+                machine->save(machine->getDefaultName() + ".yml");
+                FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::APPEND);
+                fs << "minF" << md.minF;
+                fs << "maxF" << md.maxF;
+            }
+            else
+            {
+                cout << "ERREUR lors de l'initialisation du modèle\n ";
+                return machine;
+            }
+        }
+        else if (md.minF.size() == 0)
+        {
+            FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
+            fs["minF"] >> md.minF;
+            fs["maxF"] >> md.maxF;
+        }
+        return machine;
+
+    }
+    catch (cv::Exception &e)
+    {
+        return NULL;
+    }
+
 }
 
 Ptr<KNearest> InitModeleKNearest(BaseFormes & md)
 {
-    Ptr<KNearest> machine = Algorithm::load<KNearest>("opencv_ml_knn.yml");
+    Ptr<KNearest> machine;
+    try
+    {
+        machine = Algorithm::load<KNearest>("opencv_ml_knn.yml");
 
-    if (!machine)
+        if (md.minF.size() == 0)
+        {
+            FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
+            fs["minF"] >> md.minF;
+            fs["maxF"] >> md.maxF;
+        }
+        return machine;
+
+    }
+    catch (cv::Exception &e)
     {
         if (md.formes.size() == 0)
             DonneesModele(md);
@@ -528,14 +563,7 @@ Ptr<KNearest> InitModeleKNearest(BaseFormes & md)
         {
             cout << "ERREUR lors de l'initialisation du modèle\n ";
             return machine;
-
         }
-    }
-    else if (md.minF.size() == 0)
-    {
-        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
-        fs["minF"] >> md.minF;
-        fs["maxF"] >> md.maxF;
     }
     return machine;
 }
@@ -543,9 +571,20 @@ Ptr<KNearest> InitModeleKNearest(BaseFormes & md)
 
 Ptr<LogisticRegression> InitModeleLogisticRegression(BaseFormes & md)
 {
-    Ptr<LogisticRegression> machine = Algorithm::load<LogisticRegression>("opencv_ml_lr1.yml");
+    Ptr<LogisticRegression> machine;
+    try
+    {
+        machine = Algorithm::load<LogisticRegression>("opencv_ml_lr1.yml");
 
-    if (!machine)
+        if (md.minF.size() == 0)
+        {
+            FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
+            fs["minF"] >> md.minF;
+            fs["maxF"] >> md.maxF;
+        }
+        return machine;
+    }
+    catch (cv::Exception &e)
     {
         if (md.formes.size() == 0)
             DonneesModele(md);
@@ -573,21 +612,26 @@ Ptr<LogisticRegression> InitModeleLogisticRegression(BaseFormes & md)
             return machine;
         }
     }
-    else if (md.minF.size() == 0)
-    {
-        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
-        fs["minF"] >> md.minF;
-        fs["maxF"] >> md.maxF;
-    }
     return machine;
 }
 
 
 Ptr<EM> InitModeleEM(BaseFormes & md)
 {
-    Ptr<EM> machine = Algorithm::load<EM>("opencv_ml_em.yml");
+    Ptr<EM> machine;
+    try 
+    {
+        Ptr<EM> machine = Algorithm::load<EM>("opencv_ml_em.yml");
+        if (md.minF.size() == 0)
+        {
+            FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
+            fs["minF"] >> md.minF;
+            fs["maxF"] >> md.maxF;
+        }
+        return machine;
 
-    if (!machine)
+    }
+    catch (cv::Exception &e)
     {
         if (md.formes.size() == 0)
             DonneesModele(md);
@@ -613,20 +657,26 @@ Ptr<EM> InitModeleEM(BaseFormes & md)
             return machine;
         }
     }
-    else if (md.minF.size() == 0)
-    {
-        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
-        fs["minF"] >> md.minF;
-        fs["maxF"] >> md.maxF;
-    }
     return machine;
+
 }
 
 Ptr<RTrees> InitModeleRTrees(BaseFormes &md)
 {
+    Ptr<RTrees> machine;
+    try
+    {
+        machine = Algorithm::load<RTrees>("opencv_ml_rtrees.yml");
+        if (md.minF.size() == 0)
+        {
+            FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
+            fs["minF"] >> md.minF;
+            fs["maxF"] >> md.maxF;
+        }
+        return machine;
 
-    Ptr<RTrees> machine = Algorithm::load<RTrees>("opencv_ml_rtrees.yml");
-    if (!machine)
+    }
+    catch (cv::Exception &e)
     {
         if (md.formes.size() == 0)
             DonneesModele(md);
@@ -654,12 +704,6 @@ Ptr<RTrees> InitModeleRTrees(BaseFormes &md)
             return machine;
 
         }
-    }
-    else if (md.minF.size() == 0)
-    {
-        FileStorage fs(machine->getDefaultName() + ".yml", FileStorage::READ);
-        fs["minF"] >> md.minF;
-        fs["maxF"] >> md.maxF;
     }
     return machine;
 }

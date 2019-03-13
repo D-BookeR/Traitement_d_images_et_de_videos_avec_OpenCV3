@@ -1,6 +1,10 @@
 #include <opencv2/opencv.hpp> 
 #include <thread>        
 #include <mutex> 
+#ifdef HAVE_OPENCV_XFEATURES2D
+#include "opencv2/xfeatures2d/nonfree.hpp"
+#include "opencv2/xphoto.hpp"
+#endif
 
 using namespace cv;
 using namespace std;
@@ -10,8 +14,8 @@ using namespace cv::detail;
 #define MODE_AFFICHAGE 0x100
 
 vector<mutex> mtxTimeStamp(NBCAMERA);
-int stopThread=0;
-double delai=0.025;
+int stopThread = 0;
+double delai = 0.025;
 
 struct ParamCamera {
     VideoCapture *v;
@@ -25,7 +29,7 @@ struct ParamCamera {
 };
 
 struct ParamPano {
-    bool init=false;
+    bool init = false;
     float seuilConfiance = 0.3f;
     float matchConf = 0.25f;
     vector<int> indices;
@@ -34,13 +38,14 @@ struct ParamPano {
     string surfaceCompo = "plane";
     int correctionExposition = ExposureCompensator::GAIN_BLOCKS;
     float forceMelange = 100;
-    bool coutureVisible=false;
+    bool coutureVisible = false;
     vector<Size> tailleImages;
     vector<Point> posCoin;
     vector<Size> tailleMasque;
     vector<UMat> masqueCompo;
     vector<UMat> masqueCompoPiece;
     vector<UMat> masquePiece;
+    vector<Mat> gains;
     vector<CameraParams> cameras;
     vector<double> focales;
     float focaleMoyenne;
@@ -59,11 +64,11 @@ static int InitPanorama(vector<Mat> matUSB, ParamPano &pp);
 static bool ChargerParamPano(ParamPano &pp);
 static void SauverParamPano(ParamPano pp);
 
-int main (int argc,char **argv)
+int main(int argc, char **argv)
 {
     ParamPano pPano;
     ParamPano pPano0;
-    int zoom=16;
+    int zoom = 16;
 
     bool panoActif = ChargerParamPano(pPano);
     vector<VideoCapture> v;
@@ -71,15 +76,19 @@ int main (int argc,char **argv)
     v = RechercheCamera();
     Size tailleGlobale(0, 0);
     vector<ParamCamera> pCamera(v.size());
-
+    if (pPano.cameras.size() != v.size())
+    {
+        cout << "Nombre de caméra du fichier incohérent\n";
+        panoActif = false;
+    }
     for (int i = 0; i<v.size(); i++)
     {
         if (v[i].isOpened())
         {
             if (panoActif)
             {
- //               v[i].set(CAP_PROP_FRAME_WIDTH,pPano.tailleImages[i].width );
- //               v[i].set(CAP_PROP_FRAME_HEIGHT,pPano.tailleImages[i].height);
+                //               v[i].set(CAP_PROP_FRAME_WIDTH,pPano.tailleImages[i].width );
+                //               v[i].set(CAP_PROP_FRAME_HEIGHT,pPano.tailleImages[i].height);
             }
             Size tailleWebcam = Size(static_cast<int>(v[i].get(CAP_PROP_FRAME_WIDTH)), static_cast<int>(v[i].get(CAP_PROP_FRAME_HEIGHT)));
             if (i == 0)
@@ -99,36 +108,35 @@ int main (int argc,char **argv)
         panoActif = false;
     else if (panoActif)
         panoActif = pPano.init;
-    Mat frame=Mat::zeros(tailleGlobale.height,tailleGlobale.width,CV_8UC3);
+    Mat frame = Mat::zeros(tailleGlobale.height, tailleGlobale.width, CV_8UC3);
     imshow("Pano", frame);
     Mat rPano;
     int modeAffichage = MODE_AFFICHAGE;
-    int cameraSelect=0;
+    int cameraSelect = 0;
     vector<Mat> x;
-    bool cameraNonPrete=true;
-    int nbEssai=0;
+    bool cameraNonPrete = true;
+    int nbEssai = 0;
     do
     {
         x = LireImages(&pCamera);
         nbEssai++;
         if (x.size() == v.size())
         {
-             cameraNonPrete=false;
-             for (int i=0;i<x.size();i++)
-                if (x[i].size().area()==0)
-                    cameraNonPrete=true;
+            cameraNonPrete = false;
+            for (int i = 0; i<x.size(); i++)
+                if (x[i].size().area() == 0)
+                    cameraNonPrete = true;
         }
         else
             cameraNonPrete = true;
-    }
-    while (cameraNonPrete && nbEssai<100);
+    } while (cameraNonPrete && nbEssai<100);
 
     int code = 0;
-    while  (code!=27)
+    while (code != 27)
     {
         code = waitKey(1);
-        if (code!=-1)
-            cout<<code<<endl;
+        if (code != -1)
+            cout << code << endl;
         switch (code) {
         case '0':
         case '1':
@@ -140,8 +148,8 @@ int main (int argc,char **argv)
         case '7':
         case '8':
         case '9':
-            if (code - 48 >=0 && code - 48<v.size())
-                cameraSelect=code-48;
+            if (code - 48 >= 0 && code - 48<v.size())
+                cameraSelect = code - 48;
             break;
         case 'g':
         case 'G':
@@ -158,11 +166,11 @@ int main (int argc,char **argv)
             break;
         case '+':
             if (zoom<128)
-                zoom *=2;
+                zoom *= 2;
             break;
         case '-':
             if (zoom>2)
-                zoom /=2;
+                zoom /= 2;
             break;
         case 's':
             pPano0.surfaceCompo = "stereographic";
@@ -170,7 +178,7 @@ int main (int argc,char **argv)
             if (code == 'S')
                 pPano0.surfaceCompo = "spherical";
         case 'f':
-            if (code=='f')
+            if (code == 'f')
                 pPano0.surfaceCompo = "fisheye";
         case 'p':
             if (code == 'p')
@@ -213,37 +221,38 @@ int main (int argc,char **argv)
         else
         {
             x = LireImages(&pCamera);
-            for (int j = 0; j<v.size(); j++)
-            {
-                if (v[j].isOpened())
+            if (x.size() == v.size())
+                for (int j = 0; j<v.size(); j++)
                 {
-                    int k = j;
-                    if (j == 0)
-                        k = 0;
-                    else
-                        k = j - 1;
-                    Rect r(k % 2 * x[k].cols, k / 2 * x[k].rows, x[j].cols, x[j].rows);
-                    x[j].copyTo(frame(r));
+                    if (v[j].isOpened())
+                    {
+                        int k = j;
+                        if (j == 0)
+                            k = 0;
+                        else
+                            k = j - 1;
+                        Rect r(k % 2 * x[k].cols, k / 2 * x[k].rows, x[j].cols, x[j].rows);
+                        x[j].copyTo(frame(r));
+                    }
                 }
-            }
         }
-        if (modeAffichage)
+        if (modeAffichage && x.size() == v.size())
         {
             for (int i = 0; i < v.size(); i++)
             {
                 if (!pCamera[i].derniereImage.empty())
-                    if (zoom==16)
+                    if (zoom == 16)
                         imshow(format("Webcam %d", i), x[i]);
                     else
                     {
                         Mat tmp;
-                        resize(x[i],tmp,Size(), zoom / 16.0, zoom / 16.0);
+                        resize(x[i], tmp, Size(), zoom / 16.0, zoom / 16.0);
                         imshow(format("Webcam %d", i), tmp);
                     }
             }
         }
         Mat frame2;
-        frame2=frame;
+        frame2 = frame;
         if (panoActif)
         {
             if (zoom == 16)
@@ -271,7 +280,7 @@ int main (int argc,char **argv)
     for (int j = 0; j<v.size(); j++)
         if (v[static_cast<int>(j)].isOpened())
             mtxTimeStamp[j].unlock();
-    std::this_thread::sleep_for (std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     return 0;
 }
 
@@ -284,17 +293,17 @@ int InitPanorama(vector<Mat> matUSB, ParamPano &pp)
         cout << "Il faut au moins 2 images\n";
         return 1;
     }
-    Ptr<FeaturesFinder> rechercheDescripteur;
+    Ptr<Feature2D> rechercheDescripteur;
     vector<ImageFeatures> descripteurs(nbImages);
 
 #ifdef HAVE_OPENCV_XFEATURES2D
-    rechercheDescripteur = makePtr<SurfFeaturesFinder>();
+    rechercheDescripteur = cv::xfeatures2d::SURF::create();
 #else
     rechercheDescripteur = makePtr<OrbFeaturesFinder>();
 #endif
     for (int i = 0; i < nbImages; ++i)
     {
-        (*rechercheDescripteur)(matUSB[i], descripteurs[i]);
+        computeImageFeatures(rechercheDescripteur,matUSB[i], descripteurs[i]);
         descripteurs[i].img_idx = i;
     }
     vector<MatchesInfo> appariementImage;
@@ -377,6 +386,7 @@ int InitPanorama(vector<Mat> matUSB, ParamPano &pp)
     }
 
     pp.composition = pp.algoComposition->create(static_cast<float>(pp.focaleMoyenne));
+    vector<Mat> mesmasques(nbImages);
     for (int i = 0; i < nbImages; ++i)
     {
         Mat_<float> K;
@@ -385,6 +395,7 @@ int InitPanorama(vector<Mat> matUSB, ParamPano &pp)
         pp.posCoin[i] = pp.composition->warp(matUSB[pp.indices[i]], K, pp.cameras[i].R, INTER_LINEAR, BORDER_REFLECT, imagesProjetees[i]);
         pp.tailleMasque[i] = imagesProjetees[i].size();
         pp.composition->warp(masques[i], K, pp.cameras[i].R, INTER_NEAREST, BORDER_CONSTANT, pp.masqueCompo[i]);
+        pp.masqueCompo[i].copyTo(mesmasques[i]);
     }
     pp.algoCorrectExpo = ExposureCompensator::createDefault(pp.correctionExposition);
     pp.algoCorrectExpo->feed(pp.posCoin, imagesProjetees, pp.masqueCompo);
@@ -411,6 +422,14 @@ int InitPanorama(vector<Mat> matUSB, ParamPano &pp)
         return 7;
     }
     rechercheCouture->find(imagesProjetees, pp.posCoin, pp.masqueCompo);
+    vector<Mat> mescoutures(nbImages);
+    for (int i = 0; i < nbImages; ++i)
+    {
+        pp.masqueCompo[i].copyTo(mescoutures[i]);
+    }
+    pp.algoCorrectExpo->getMatGains(pp.gains);
+    pp.algoCorrectExpo->setUpdateGain(true);
+
     SauverParamPano(pp);
     masques.clear();
     return 0;
@@ -418,28 +437,13 @@ int InitPanorama(vector<Mat> matUSB, ParamPano &pp)
 
 Mat ComposerPanorama(vector<Mat> matUSB, ParamPano &pp)
 {
-    int nbImages= pp.indices.size();
-    if (pp.algoCorrectExpo == NULL || pp.composition==NULL)
-    {
-        vector<UMat> imagesProjetees(nbImages);
-
-        pp.composition = pp.algoComposition->create(static_cast<float>(pp.focaleMoyenne));
-        for (int i = 0; i < nbImages; ++i)
-        {
-            Mat_<float> K;
-            pp.cameras[i].K().convertTo(K, CV_32F);
-            pp.composition->warp(matUSB[pp.indices[i]], K, pp.cameras[i].R, INTER_LINEAR, BORDER_REFLECT, imagesProjetees[i]);
-        }
-        vector<UMat> imagesProjeteesReel(nbImages);
-        for (int i = 0; i <nbImages; ++i)
-            imagesProjetees[i].convertTo(imagesProjeteesReel[i], CV_32F);
-        pp.algoCorrectExpo = ExposureCompensator::createDefault(pp.correctionExposition);
-        pp.algoCorrectExpo->feed(pp.posCoin, imagesProjetees, pp.masqueCompo);
-    }
     Ptr<Blender> melangeur;
+    int nbImages = pp.indices.size();
+
+        
     for (int idxImage = 0; idxImage < nbImages; ++idxImage)
     {
-        int indexImage=pp.indices[idxImage];
+        int indexImage = pp.indices[idxImage];
         Mat K;
         pp.cameras[idxImage].K().convertTo(K, CV_32F);
         Mat imgProjetee;
@@ -489,6 +493,11 @@ void SauverParamPano(ParamPano pp)
     fs << "taille" << static_cast<int>(pp.posCoin.size());
     fs << "focaleMoyenne" << pp.focaleMoyenne;
     fs << "indices" << pp.indices;
+    fs << "gainsize" << static_cast<int>(pp.gains.size());
+    for (int i = 0; i < pp.gains.size(); i++)
+    {
+        fs << format("gain%d", i) << pp.gains[i];
+    }
     for (int i = 0; i < pp.posCoin.size(); ++i)
     {
         fs << format("focal%d", i) << pp.focales[i];
@@ -527,7 +536,7 @@ bool ChargerParamPano(ParamPano &pp)
         fs[format("focal%d", i)] >> xx; pp.focales.push_back(xx);
         fs[format("coin%d", i)] >> s; pp.posCoin.push_back(s);
         fs[format("tailleMasque%d", i)] >> s; pp.tailleMasque.push_back(s);
-        fs[format("indice%d", i)] >> j; 
+        fs[format("indice%d", i)] >> j;
         Mat x;
         fs[format("masque%d", i)] >> x;
         x.copyTo(ux);
@@ -540,6 +549,12 @@ bool ChargerParamPano(ParamPano &pp)
         fs[format("cameraPPY%d", i)] >> c.ppy;
         pp.cameras.push_back(c);
     }
+    fs["gainsize"] >> taille;
+    pp.gains.resize(taille);
+    for (int i = 0; i < taille; i++)
+    {
+        fs[format("gain%d", i)] >> pp.gains[i];
+    }
     pp.masqueCompoPiece.resize(pp.masquePiece.size());
     if (pp.surfaceCompo == "plane")
         pp.algoComposition = makePtr<cv::PlaneWarper>();
@@ -551,6 +566,10 @@ bool ChargerParamPano(ParamPano &pp)
         pp.algoComposition = makePtr<cv::FisheyeWarper>();
     else if (pp.surfaceCompo == "stereographic")
         pp.algoComposition = makePtr<cv::StereographicWarper>();
+    pp.composition = pp.algoComposition->create(static_cast<float>(pp.focaleMoyenne));
+    pp.algoCorrectExpo = ExposureCompensator::createDefault(pp.correctionExposition);
+    pp.algoCorrectExpo->setMatGains(pp.gains);
+    pp.algoCorrectExpo->setUpdateGain(false);
     return true;
 }
 
@@ -558,10 +577,10 @@ vector<VideoCapture> RechercheCamera()
 {
     vector<VideoCapture> v;
 
-    for (int i = 0; i<NBCAMERA; i++)
+    for (int i =0; i<NBCAMERA; i++)
     {
         VideoCapture video;
-        video.open(i);
+        video.open(i + CAP_DSHOW);
         if (!video.isOpened())
         {
             cout << " cannot openned camera : " << i << endl;
@@ -571,6 +590,8 @@ vector<VideoCapture> RechercheCamera()
             video.set(CAP_PROP_FRAME_WIDTH, 640);
             video.set(CAP_PROP_FRAME_HEIGHT, 480);
             v.push_back(video);
+            cout << "Camera : " << i << "-> " << video.get(CAP_PROP_FRAME_HEIGHT);
+            cout << "  " << video.get(CAP_PROP_FRAME_WIDTH) << endl;
         }
     }
     return v;
@@ -580,7 +601,7 @@ vector<Mat> LireImagesSynchro(vector<ParamCamera> *pc)
 {
     vector<Mat> x;
     int64 tps;
-    int essai =0;
+    int essai = 0;
     do
     {
         for (int i = 0; i<pc->size(); i++)
@@ -598,7 +619,7 @@ vector<Mat> LireImagesSynchro(vector<ParamCamera> *pc)
         {
             mtxTimeStamp[i].lock();
         }
-        int nbCapture=0;
+        int nbCapture = 0;
         for (int i = 0; i < pc->size(); i++)
         {
             if ((*pc)[i].captureImage == 0)
@@ -610,7 +631,7 @@ vector<Mat> LireImagesSynchro(vector<ParamCamera> *pc)
         }
         for (int i = 0; i < pc->size(); i++)
         {
-            if (nbCapture== pc->size())
+            if (nbCapture == pc->size())
             {
                 x.push_back((*pc)[i].imAcq);
             }
@@ -620,9 +641,8 @@ vector<Mat> LireImagesSynchro(vector<ParamCamera> *pc)
         }
         if (nbCapture<pc->size())
             delai += 0.03;
-    }
-    while (x.size()!=pc->size() && essai <4);
-    delai -=0.015;
+    } while (x.size() != pc->size() && essai <4);
+    delai -= 0.015;
     return x;
 }
 
@@ -632,7 +652,15 @@ vector<Mat> LireImages(vector<ParamCamera> *pc)
     for (int i = 0; i < pc->size(); i++)
     {
         mtxTimeStamp[i].lock();
-        (*pc)[i].derniereImage.copyTo(x[i]);
+        if (!(*pc)[i].derniereImage.empty())
+            (*pc)[i].derniereImage.copyTo(x[i]);
+        else
+        {
+
+            x.clear();
+            mtxTimeStamp[i].unlock();
+            return x;
+        }
         mtxTimeStamp[i].unlock();
     }
     return x;
@@ -683,22 +711,29 @@ void GestionCmdCamera(ParamCamera *pc)
 
 void AcquisitionVideo(ParamCamera *pc)
 {
+    cout << "Running thread " << pc->index << endl;
     int64  tpsFrame = 0, tpsFramePre;
     Mat frame;
     *(pc->v) >> frame;
+    if (frame.empty())
+    {
+        cout << "Image vide index ->" << pc->index << endl;
+    }
     for (;;)
     {
         tpsFramePre = getTickCount();
         mtxTimeStamp[pc->index].lock();
         *(pc->v) >> frame;
         pc->derniereImage = frame;
+        if (frame.empty())
+            cout << "Image vide";
         tpsFrame = getTickCount();
         GestionCmdCamera(pc);
         if (stopThread)
             break;
         if (pc->captureImage)
         {
-            if (tpsFrame >= pc->tpsCapture)
+            if (!frame.empty() && tpsFrame >= pc->tpsCapture)
             {
                 pc->captureImage = 0;
                 frame.copyTo(pc->imAcq);
@@ -708,7 +743,7 @@ void AcquisitionVideo(ParamCamera *pc)
         }
         mtxTimeStamp[pc->index].unlock();
         tpsFrame = getTickCount();
-        int64 sleepTime = static_cast<int64>((tpsFrame-tpsFramePre ) / getTickFrequency() * 1000000);
+        int64 sleepTime = static_cast<int64>((tpsFrame - tpsFramePre) / getTickFrequency() * 1000000);
         std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     }
     mtxTimeStamp[pc->index].unlock();

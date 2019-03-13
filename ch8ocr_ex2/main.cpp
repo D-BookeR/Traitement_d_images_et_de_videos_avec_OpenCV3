@@ -30,13 +30,13 @@ int main(int argc, char **argv)
         return -1;
     }
     vector<Mat> tabCanaux;
-    cvtColor(mOriginal, mOriginalRGB,CV_BGR2RGB);
+    cvtColor(mOriginal, mOriginalRGB,COLOR_BGR2RGB);
     computeNMChannels(mOriginalRGB,tabCanaux,ERFILTER_NM_RGBLGrad);
     int cn = (int)tabCanaux.size();
     for (int c = 0; c < cn - 1; c++)
         tabCanaux.push_back(255 - tabCanaux[c]);
 
-    Ptr<ERFilter> filtreRegion1 = createERFilterNM1(loadClassifierNM1("g:/lib/opencv_contrib/modules/text/samples/trained_classifierNM1.xml"), 16, 0.00005f, 0.13f, 0.2f, true, 0.1f);
+    Ptr<ERFilter> filtreRegion1 = createERFilterNM1(loadClassifierNM1("g:/lib/opencv_contrib/modules/text/samples/trained_classifierNM1.xml"), 16, 0.000025f, 0.13f, 0.2f, true, 0.1f);
     Ptr<ERFilter> filtreRegion2 = createERFilterNM2(loadClassifierNM2("g:/lib/opencv_contrib/modules/text/samples/trained_classifierNM2.xml"), 0.5);
 
     vector<vector<ERStat> > regions(tabCanaux.size());
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 //    erGrouping(mOriginal, tabCanaux, regions, region_groups, groups_boxes, ERGROUPING_ORIENTATION_ANY, "g:/lib/opencv_contrib/modules/text/samples/trained_classifier_erGrouping.xml", 0.5);
 
     for (int i = 0; i<zoneTexte.size(); i++)
-        rectangle(mOriginal, zoneTexte[i],Scalar::all(255));
+        rectangle(mOriginal, zoneTexte[i],Scalar(0,0,255),3);
     imshow("Zone de texte", mOriginal);
     waitKey();
     return 0;

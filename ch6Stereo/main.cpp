@@ -74,7 +74,7 @@ struct SuiviDistance{
 };
 
 struct ParamCalibration {
-    vector<int> typeCalib2D = { CALIB_FIX_PRINCIPAL_POINT + CALIB_FIX_K4 + CALIB_FIX_K5 + CALIB_FIX_K6 + CALIB_ZERO_TANGENT_DIST,CALIB_FIX_K4 + CALIB_FIX_K5 + CALIB_FIX_K6+ CALIB_ZERO_TANGENT_DIST };
+    vector<int> typeCalib2D = { 0,CALIB_FIX_K4 + CALIB_FIX_K5 + CALIB_FIX_K6 + CALIB_ZERO_TANGENT_DIST,CALIB_FIX_K4 + CALIB_FIX_K5 + CALIB_FIX_K6+ CALIB_ZERO_TANGENT_DIST };
     int indexUSB;
     int index;
     vector<Mat> rvecs, tvecs;
@@ -137,6 +137,7 @@ static void MesureDistance(int event, int x, int y, int flags, void *userdata);
 #define MODE_EPIPOLAIRE 0x800
 #define MODE_REGLAGECAMERA 0x1000
 
+
 int main (int argc,char **argv)
 {
 
@@ -167,7 +168,7 @@ int main (int argc,char **argv)
 
     for (int i = 0; i<pc.size();i++)
     {
-        VideoCapture vid(pc[i].indexUSB);
+        VideoCapture vid(pc[i].indexUSB+CAP_DSHOW);
         if (vid.isOpened())
         {
             nbCamera++;
@@ -706,8 +707,8 @@ int main (int argc,char **argv)
                     pStereo.sgbm->compute(x[0], x[1], sDistance.disparite);
                 else
                 {
-                    cvtColor(x[0], imgL, CV_BGR2GRAY);
-                    cvtColor(x[1], imgD, CV_BGR2GRAY);
+                    cvtColor(x[0], imgL, COLOR_BGR2GRAY);
+                    cvtColor(x[1], imgD, COLOR_BGR2GRAY);
                     pStereo.bm->compute(imgL, imgD, sDistance.disparite);
                 }
                 sDistance.disparite.convertTo(disp8, CV_8U, 1 / 16.);
@@ -759,7 +760,7 @@ void videoacquire(ParamCamera *pc)
     bbButter[8] = 0.3375;
     bbButter[9] = 0.4208;
     bbButter[10] = 0.5;
-    int indFiltreMoyenne=8;
+    int indFiltreMoyenne=0;
 
     int64 tpsInit = getTickCount();
     int64 tckPerSec = static_cast<int64> (getTickFrequency());
@@ -1380,7 +1381,7 @@ bool AnalyseGrille(Mat x, ParamCalibration *pc, ParamCalibration3D *sys3d,int in
     if (grille)
     {
         Mat imGris;
-        cvtColor(x, imGris, CV_BGR2GRAY);
+        cvtColor(x, imGris, COLOR_BGR2GRAY);
         cornerSubPix(imGris, echiquier, Size(5, 5), Size(-1, -1), TermCriteria(TermCriteria::EPS + TermCriteria::COUNT, 100, 0.01));
         drawChessboardCorners(frame, Size(mire.nbC, mire.nbL), Mat(echiquier), false);
         if (sys3d==NULL && pc)

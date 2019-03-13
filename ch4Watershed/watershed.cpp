@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     normalize(g,g,256,0,NORM_INF);
     g.convertTo(g,CV_8U);
     Mat gMax;
-    cvtColor(g, gMax, CV_BGR2GRAY);
+    cvtColor(g, gMax, COLOR_BGR2GRAY);
     Mat pointsBas =gMax<seuilGrClone;
     Mat eltStruct=getStructuringElement(MORPH_RECT,Size(3,3));
     char modeAffichage= MODE_AFFICHAGE_SEED;

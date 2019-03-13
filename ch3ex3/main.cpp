@@ -152,7 +152,7 @@ void Glissiere(int x, void *r)
     tm.start();
     Mat dst(p->img.rows, p->img.cols, CV_8UC3);
     Mat imgLuminance;
-    cvtColor(p->img, imgLuminance, CV_BGR2GRAY);
+    cvtColor(p->img, imgLuminance, COLOR_BGR2GRAY);
     if (!imgLuminance.isContinuous())
     {
         cout << "Parametre invalide\n";
